@@ -1,0 +1,62 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                          MACD Expert Advisor for Prop Firms |
+//|                                                forexroboteasy.com |
+//|                                             Forex Robot Easy Team |
+//+------------------------------------------------------------------+
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <MovingAverages\MovingAverages.mqh>
+
+// Input parameters
+input double Lots = 0.1; // Trading lot size
+input int StopLoss = 50; // Stop loss in pips
+input int TakeProfit = 100; // Take profit in pips
+
+// Initialize global variables
+CTrade trade; // Trade class object
+CMovingAverage MA; // Moving Average class object
+double macdMain[], macdSignal[], macdHist[]; // Arrays to store MACD values
+
+// Expert Advisor initialization function
+int OnInit()
+{
+   // Set up MACD indicator
+   int macdHandle = iMACD(_Symbol, PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE);
+   ArraySetAsSeries(macdMain, true);
+   ArraySetAsSeries(macdSignal, true);
+   ArraySetAsSeries(macdHist, true);
+
+   // Calculate MACD values
+   CopyBuffer(macdHandle, 2, 0, Bars, macdMain);
+   CopyBuffer(macdHandle, 1, 0, Bars, macdSignal);
+   CopyBuffer(macdHandle, 0, 0, Bars, macdHist);
+
+   return(INIT_SUCCEEDED);
+}
+
+// Expert Advisor start function
+void OnTick()
+{
+   // Check for trading signals
+   if (macdHist[0] > 0 && macdHist[1] < 0)
+   {
+      // Open a buy trade
+      if (!trade.PositionSelect(_Symbol))
+         trade.Buy(Lots, _Symbol, 0, 0, StopLoss, TakeProfit, 'MACD Expert Advisor');
+   }
+   else if (macdHist[0] < 0 && macdHist[1] > 0)
+   {
+      // Open a sell trade
+      if (!trade.PositionSelect(_Symbol))
+         trade.Sell(Lots, _Symbol, 0, 0, StopLoss, TakeProfit, 'MACD Expert Advisor');
+   }
+}
+
+// Expert Advisor deinitialization function
+void OnDeinit(const int reason)
+{
+   // Close any open trades
+   trade.PositionCloseAll();
+}
